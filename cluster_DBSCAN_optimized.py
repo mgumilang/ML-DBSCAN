@@ -15,7 +15,7 @@ eps_list = []
 for x in range(N):
     print (x)
     x_list = []
-    for y in range(N):
+    for y in range(x+1, N):
         if (y == x):
             continue
         else:
@@ -24,9 +24,9 @@ for x in range(N):
             elif(eps_table[x][y] == 1.0 or eps_table[y][x] == 1.0):
                 x_list.append(y)
             else:
-                rc1 = df.iloc[x, :]
-                rc2 = df.iloc[y, :]
-                s = abs(euclidean(rc1, rc2))
+                a = df.loc[x].values.tolist()
+                b = df.loc[y].values.tolist()
+                s = abs(euclidean(a, b))
                 if (s < eps):
                     eps_table[x][y] = 1.0 #marked as s < epsilon
                     eps_table[y][x] = 1.0
