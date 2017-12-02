@@ -1,86 +1,89 @@
+"""
+    Pseudocode from wikipedia
+"""
 import pandas as pd
-import numpy as np
-from scipy.spatial.distance import euclidean
+from scipy.spatial.distance import pdist
 
 eps = 2
 minpts = 2
 
+# Create condensed distance vector    
 df = pd.read_csv('normalized_train.csv')
+dis_condensed = pdist(df, 'euclidean')
+N = len(df)
 
-N = df.loc[:, '0'].count()
-eps_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()]) #init table
+# Condensed Index
+def square_to_condensed(i, j, n):
+    assert i != j, "no diagonal elements in condensed matrix"
+    if i < j:
+        i, j = j, i
+    res = n*j - j*(j+1)/2 + i - 1 - j
+    return int(res)
 
-print ('Creating Eps List')
-eps_list = []
-for x in range(N):
-    print (x)
-    x_list = []
-    for y in range(x+1, N):
-        if (y == x):
+# Range Query function
+def RangeQuery(q_id, eps):
+    """
+        Params
+            eps : epsilon
+            q_id : id of dataframe object to be queried
+    """
+    neighbors = []
+    for j in range(N):
+        if q_id == j:
             continue
-        else:
-            if (eps_table[x][y] == 2.0 or eps_table[y][x] == 2.0):
+#        print ('{}, {}, {}, {}\n'.format(q_id,j,N, square_to_condensed(q_id,j,N)))
+        if dis_condensed[square_to_condensed(q_id, j, N)] < eps:
+            neighbors.append(j)
+    return neighbors
+
+# Init global labels / cluster
+# Cluster started from 1 to N
+# Noise defined as 0.0
+# Undefined defined as -1.0
+labels = []
+for x in range(N):
+    labels.append(-1.0)
+
+# DBScan function
+import timeit
+
+def DBScan(eps, minpts):
+    """
+        Params
+            eps : epsilon
+            minpts : mininum pts
+    """
+    cluster = 1.0 # initial cluster
+    for i in range(N):
+        start = timeit.default_timer()
+        
+        if labels[i] != -1.0:
+            continue
+        neighbors = RangeQuery(i, eps)
+        if len(neighbors) < minpts:
+            labels[i] = 0.0 #label as noise
+            continue
+        cluster += 1.0
+        labels[i] = cluster
+        neighbors = [x for x in neighbors if x != i] #remove current record in neighbors list
+        for neighbor in neighbors:
+            if labels[neighbor] == 0.0:
+                labels[neighbor] = cluster
+            if labels[neighbor] == -1.0:
                 continue
-            elif(eps_table[x][y] == 1.0 or eps_table[y][x] == 1.0):
-                x_list.append(y)
-            else:
-                a = df.loc[x].values.tolist()
-                b = df.loc[y].values.tolist()
-                s = abs(euclidean(a, b))
-                if (s < eps):
-                    eps_table[x][y] = 1.0 #marked as s < epsilon
-                    eps_table[y][x] = 1.0
-                    x_list.append(y)
-                else:
-                    eps_table[x][y] = 2.0 #marked as to far (s>=epsilon)
-                    eps_table[y][x] = 2.0
-    eps_list.append(x_list)
+            labels[neighbor] = cluster
+            n_neighbors = RangeQuery(neighbor, eps)
+            if len(n_neighbors) >= minpts:
+                neighbors = list(set().union(neighbors, n_neighbors))
+        #Your statements here
 
-print ('Eps List Created')    
-core_list = []
-for e in range(len(eps_list)):
-    if (len(eps_list[e])+1 >= minpts):
-        core_list.append(e)
-            
-noise = []
-border = []
-cluster = []
+        stop = timeit.default_timer()
+        print ('Time elapsed for {}/{} loop : {}'.format(i, N, stop-start))
 
-def DBSCAN(e, z):
-    try:
-        if e in cluster[z]:
-            return
-    except:
-        cluster.append([])
-    if e in noise:
-        return
-    if (e not in core_list):
-        isborder = False
-        for point in eps_list[e]:
-            if point in core_list:
-                border.append(e)
-                cluster[z].append(e)
-                isborder = True
-        if not isborder:
-            noise.append(e)
-        for point in eps_list[e]:
-            DBSCAN(point, z)
-    else:
-        cluster[z].append(e)
-        for point in eps_list[e]:
-            DBSCAN(point, z)
-
-z = 0
-for e in range(len(eps_list)):
-    found = False
-    for clust in cluster:
-        if e in clust:
-            found = True
-            break
-    if found:
-        continue
-    if e in noise:
-        continue
-    DBSCAN(e, z)
-    if e not in noise:
-        z += 1
+# Do DBScan
+print ("Do DBScan ....")
+DBScan(eps, minpts)
+        
+        
+        
+    
