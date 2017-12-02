@@ -1,7 +1,7 @@
 with open ('CencusIncome.csv', 'r') as f:
     lines = f.readlines()
 
-data_per_class = 5
+data_per_class = 50
 with open ('CencusIncomeUndersampled.csv', 'w') as f:
     i = 0
     j = 0
