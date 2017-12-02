@@ -1,6 +1,7 @@
 """
     Pseudocode from wikipedia
 """
+import numpy as np
 import pandas as pd
 from scipy.spatial.distance import pdist
 from sklearn import metrics
@@ -79,7 +80,6 @@ def DBScan(eps, minpts):
             if len(n_neighbors) >= minpts:
                 neighbors = set().union(neighbors, n_neighbors)
         stop = timeit.default_timer()
-        
         print ('Time elapsed for {}/{} loop : {}'.format(i, N, stop-start))
 
 # Do DBScan
@@ -90,8 +90,14 @@ DBScan(eps, minpts)
 #with open ('labels.txt', 'w') as f:
 #    for _id, label in enumerate(labels):
 #        f.write('{},{}\n'.format(_id, label))
-        
 
+# Convert label
+for _id, label in enumerate(labels):
+    if label == NOISE:
+        continue
+    else:
+        labels[_id] = labels[_id] - 1
+              
 # From labels to clusters
 clusters = []
 noise = []
@@ -125,9 +131,8 @@ with open ('CencusIncomeUndersampled.csv', 'r') as f:
         elif (x[-1] == '>50K\n'):
             real_label.append(1.0)
 
-total_data = 0
-total_single_class = 0
-confusion_matrix = []
+# Compute cooccurence matrix
+cooccurrence_matrix = []
 for member in cluster_member:
     conf_mat = []
     classified_0 = 0.0
@@ -137,24 +142,58 @@ for member in cluster_member:
             classified_1 += 1
         else:
             classified_0 += 1
-        total_data += 1
     conf_mat.append(classified_0)
     conf_mat.append(classified_1)
-    confusion_matrix.append(conf_mat)
-    total_single_class += max(classified_0, classified_1)
+    cooccurrence_matrix.append(conf_mat)
 
-print (labels)
-print ('Purity : {}%'.format((total_single_class/total_data)*100))
-print('Estimated number of clusters: %d' % len(clusters))
-print("Homogeneity: %0.3f" % metrics.homogeneity_score(real_label, labels))
-print("Completeness: %0.3f" % metrics.completeness_score(real_label, labels))
-print("V-measure: %0.3f" % metrics.v_measure_score(real_label, labels))
-print("Adjusted Rand Index: %0.3f"
-      % metrics.adjusted_rand_score(real_label, labels))
-print("Adjusted Mutual Information: %0.3f"
-      % metrics.adjusted_mutual_info_score(real_label, labels))
-print("Silhouette Coefficient: %0.3f"
-      % metrics.silhouette_score(df, labels))
+print (cooccurrence_matrix)
 
-
+# Compute purity from cooccurence matrix
+total_data = 0
+total_single_class = 0
+for cluster_members in cooccurrence_matrix:
+    total_single_class += max(cluster_members)
+    for member in cluster_members:
+        total_data += member
+purity = (total_single_class/total_data)*100
     
+print ('Purity : {}%'.format(purity))
+
+# RI
+from scipy.misc import comb
+
+# There is a comb function for Python which does 'n choose k'                                                                                            
+# only you can't apply it to an array right away                                                                                                         
+# So here we vectorize it...                                                                                                                             
+def myComb(a,b):
+  return comb(a,b,exact=True)
+
+vComb = np.vectorize(myComb)
+
+def get_tp_fp_tn_fn(cooccurrence_matrix):
+  tp_plus_fp = vComb(cooccurrence_matrix.sum(0, dtype=int),2).sum()
+  tp_plus_fn = vComb(cooccurrence_matrix.sum(1, dtype=int),2).sum()
+  tp = vComb(cooccurrence_matrix.astype(int), 2).sum()
+  fp = tp_plus_fp - tp
+  fn = tp_plus_fn - tp
+  tn = comb(cooccurrence_matrix.sum(), 2) - tp - fp - fn
+
+  return [tp, fp, tn, fn]
+
+cooccurrence_matrix = np.array(cooccurrence_matrix)
+
+# Get the stats                                                                                                                                        
+tp, fp, tn, fn = get_tp_fp_tn_fn(cooccurrence_matrix)
+
+print ("TP: %d, FP: %d, TN: %d, FN: %d" % (tp, fp, tn, fn))
+# Print the measures:                                                                                                                                  
+print ("Rand index: %f" % (float(tp + tn) / (tp + fp + fn + tn)))
+
+precision = float(tp) / (tp + fp)
+recall = float(tp) / (tp + fn)
+
+print ("Precision : %f" % precision)
+print ("Recall    : %f" % recall)
+print ("F1        : %f" % ((2.0 * precision * recall) / (precision + recall)))
+
+
