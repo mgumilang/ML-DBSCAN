@@ -4,9 +4,8 @@
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import pdist
-from sklearn import metrics
 
-eps = 2
+eps = 1.5
 minpts = 2
 NOISE = -1
 UNDEFINED = -999
@@ -146,8 +145,6 @@ for member in cluster_member:
     conf_mat.append(classified_1)
     cooccurrence_matrix.append(conf_mat)
 
-print (cooccurrence_matrix)
-
 # Compute purity from cooccurence matrix
 total_data = 0
 total_single_class = 0
@@ -157,8 +154,6 @@ for cluster_members in cooccurrence_matrix:
         total_data += member
 purity = (total_single_class/total_data)*100
     
-print ('Purity : {}%'.format(purity))
-
 # RI
 from scipy.misc import comb
 
@@ -191,9 +186,9 @@ print ("Rand index: %f" % (float(tp + tn) / (tp + fp + fn + tn)))
 
 precision = float(tp) / (tp + fp)
 recall = float(tp) / (tp + fn)
-
+print ('Eps : {}, Minpts : {}'.format(eps, minpts))
+print ('Total cluster : {}'.format(len(clusters)))
+print ('Purity : {}%'.format(purity))
 print ("Precision : %f" % precision)
 print ("Recall    : %f" % recall)
 print ("F1        : %f" % ((2.0 * precision * recall) / (precision + recall)))
-
-
