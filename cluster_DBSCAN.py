@@ -10,8 +10,8 @@ minpts = 2
 df = pd.read_csv('normalized_10.csv')
 
 #%%
-dis_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()])
 
+dis_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()])
 for x in range(df.loc[:, '0'].count()):
     for y in range(x+1, df.loc[:, '0'].count()):
         print(x, y)
@@ -20,13 +20,14 @@ for x in range(df.loc[:, '0'].count()):
         sum = 0
         for i in range(len(a)):
             sum += (a[i] - b[i]) ** 2
-        dis_table[x][y] = math.sqrt(sum)    
+        dis_table[x][y] = math.sqrt(sum)
+        
         
 #%%
 with open ('dis_table.txt', 'w')  as f:
     for x in range(df.loc[:, '0'].count()):
         for y in range(x, df.loc[:, '0'].count()):
-            f.write('{} {} {}\n'.format(x, y, dis_table[x][y])
+            f.write('{} {} {}\n'.format(x, y, dis_table[x][y]))
             
 #%%
 eps_list = []
