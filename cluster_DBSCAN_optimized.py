@@ -4,8 +4,10 @@
 import pandas as pd
 from scipy.spatial.distance import pdist
 
-eps = 3
+eps = 2
 minpts = 2
+NOISE = -1.0
+UNDEFINED = -2.0
 
 # Create condensed distance vector    
 df = pd.read_csv('normalized_undersampled.csv')
@@ -42,7 +44,7 @@ def RangeQuery(q_id, eps):
 # Undefined defined as -1.0
 labels = []
 for x in range(N):
-    labels.append(-1.0)
+    labels.append(UNDEFINED)
 
 # DBScan function
 import timeit
@@ -53,23 +55,23 @@ def DBScan(eps, minpts):
             eps : epsilon
             minpts : mininum pts
     """
-    cluster = 1.0 # initial cluster
+    cluster = 0.0 # initial cluster
     for i in range(N):
         start = timeit.default_timer()
         
-        if labels[i] != -1.0:
+        if labels[i] != UNDEFINED:
             continue
         neighbors = RangeQuery(i, eps)
         if len(neighbors) < minpts:
-            labels[i] = 0.0 #label as noise
+            labels[i] = NOISE #label as noise
             continue
         cluster += 1.0
         labels[i] = cluster
         neighbors = [x for x in neighbors if x != i] #remove current record in neighbors list
         for neighbor in neighbors:
-            if labels[neighbor] == 0.0:
+            if labels[neighbor] == NOISE:
                 labels[neighbor] = cluster
-            if labels[neighbor] == -1.0:
+            if labels[neighbor] != UNDEFINED:
                 continue
             labels[neighbor] = cluster
             n_neighbors = RangeQuery(neighbor, eps)
@@ -83,6 +85,7 @@ def DBScan(eps, minpts):
 # Do DBScan
 print ("Do DBScan ....")
 DBScan(eps, minpts)
+
 # Save labels
 #with open ('labels.txt', 'w') as f:
 #    for _id, label in enumerate(labels):
@@ -93,9 +96,9 @@ DBScan(eps, minpts)
 clusters = []
 noise = []
 for _id, label in enumerate(labels):
-    if label not in clusters and label != 0.0 and label != -1.0:
+    if label not in clusters and label != NOISE and label != UNDEFINED:
         clusters.append(label)
-    if label == 0.0:
+    if label == NOISE:
         noise.append(_id)
         
 # Create per clusters membership
