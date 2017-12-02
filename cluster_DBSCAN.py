@@ -7,21 +7,20 @@ eps = 2
 minpts = 2
 
 #%%
-df = pd.read_csv('normalized_train.csv')
+df = pd.read_csv('normalized_10.csv')
 
 #%%
-from scipy.spatial.distance import euclidean
+dis_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()])
 
-eps_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()])
 for x in range(df.loc[:, '0'].count()):
     for y in range(x+1, df.loc[:, '0'].count()):
         print(x, y)
         a = df.loc[x].values.tolist()
         b = df.loc[y].values.tolist()
-        dist = euclidean(a, b)
-        if (dist < eps):
-            eps_table[x][y] = 1.0
-        
+        sum = 0
+        for i in range(len(a)):
+            sum += (a[i] - b[i]) ** 2
+        dis_table[x][y] = math.sqrt(sum)    
         
 #%%
 with open ('dis_table.txt', 'w')  as f:
