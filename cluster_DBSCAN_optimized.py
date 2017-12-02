@@ -8,7 +8,7 @@ minpts = 2
 df = pd.read_csv('normalized_train.csv')
 
 N = df.loc[:, '0'].count()
-eps_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()])
+eps_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()]) #init table
 
 print ('Creating Eps List')
 eps_list = []
@@ -26,13 +26,13 @@ for x in range(N):
             else:
                 rc1 = df.iloc[x, :]
                 rc2 = df.iloc[y, :]
-                s = euclidean(rc1, rc2)
+                s = abs(euclidean(rc1, rc2))
                 if (s < eps):
-                    eps_table[x][y] = 1.0
+                    eps_table[x][y] = 1.0 #marked as s < epsilon
                     eps_table[y][x] = 1.0
                     x_list.append(y)
                 else:
-                    eps_table[x][y] = 2.0
+                    eps_table[x][y] = 2.0 #marked as to far (s>=epsilon)
                     eps_table[y][x] = 2.0
     eps_list.append(x_list)
 
