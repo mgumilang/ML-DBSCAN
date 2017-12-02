@@ -7,7 +7,7 @@ eps = 2
 minpts = 2
 
 #%%
-df = pd.read_csv('normalized_10.csv')
+df = pd.read_csv('normalized_undersample.csv')
 
 #%%
 dis_table = np.zeros([df.loc[:, '0'].count(), df.loc[:, '0'].count()])

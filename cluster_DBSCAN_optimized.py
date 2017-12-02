@@ -4,11 +4,11 @@
 import pandas as pd
 from scipy.spatial.distance import pdist
 
-eps = 2
+eps = 3
 minpts = 2
 
 # Create condensed distance vector    
-df = pd.read_csv('normalized_train.csv')
+df = pd.read_csv('normalized_undersampled.csv')
 dis_condensed = pdist(df, 'euclidean')
 N = len(df)
 
@@ -83,7 +83,64 @@ def DBScan(eps, minpts):
 # Do DBScan
 print ("Do DBScan ....")
 DBScan(eps, minpts)
+# Save labels
+#with open ('labels.txt', 'w') as f:
+#    for _id, label in enumerate(labels):
+#        f.write('{},{}\n'.format(_id, label))
         
+
+# From labels to clusters
+clusters = []
+noise = []
+for _id, label in enumerate(labels):
+    if label not in clusters and label != 0.0 and label != -1.0:
+        clusters.append(label)
+    if label == 0.0:
+        noise.append(_id)
         
-        
+# Create per clusters membership
+cluster_member = []
+for cluster in clusters:
+    members = []
+    for _id, label in enumerate(labels):
+        if label == cluster:
+            members.append(_id)
+    cluster_member.append(members)
+
+# Print result
+print ('Total Cluster : {}\n'.format(len(clusters)))
+print ('Total Noise : {}\n'.format(len(noise)))
+
+# Evaluate
+real_label = []
+with open ('CencusIncomeUndersampled.csv', 'r') as f:
+    lines = f.readlines()
+    count = 0
+    for line in lines:
+        x = line.split(',')
+        if (x[-1] == '<=50K\n'):
+            real_label.append(0.0)
+        elif (x[-1] == '>50K\n'):
+            real_label.append(1.0)
+
+total_data = 0
+total_single_class = 0
+confusion_matrix = []
+for member in cluster_member:
+    conf_mat = []
+    classified_0 = 0.0
+    classified_1 = 0.0
+    for el in member:
+        if real_label[el] == 1.0:
+            classified_1 += 1
+        else:
+            classified_0 += 1
+        total_data += 1
+    conf_mat.append(classified_0)
+    conf_mat.append(classified_1)
+    confusion_matrix.append(conf_mat)
+    total_single_class += max(classified_0, classified_1)
+    
+print ('Purity : {}%'.format((total_single_class/total_data)*100))
+
     
